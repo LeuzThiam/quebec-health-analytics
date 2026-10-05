@@ -11,6 +11,8 @@ Le projet est dans sa phase d'exploration des sources. Deux jeux de données off
 
 Les notebooks valident la structure des fichiers, leur qualité et la relation entre les numéros de permis des installations.
 
+L'environnement Snowflake de développement contient la base `QUEBEC_HEALTH_DWH`, les schémas analytiques initiaux et un warehouse `X-SMALL` configuré pour s'arrêter automatiquement après 60 secondes d'inactivité.
+
 ## Exécuter les notebooks
 
 ```powershell
