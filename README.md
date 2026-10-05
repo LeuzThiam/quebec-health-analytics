@@ -4,14 +4,16 @@ Plateforme de données destinée à analyser la pression sur les urgences, l'acc
 
 ## État actuel
 
-Le projet est dans sa phase d'exploration des sources. Deux jeux de données officiels du MSSS sont actuellement étudiés :
+Le projet dispose maintenant d'un premier pipeline analytique fonctionnel à partir de deux jeux de données officiels du MSSS :
 
 - la situation horaire dans les urgences;
 - le référentiel M02 des installations.
 
-Les notebooks valident la structure des fichiers, leur qualité et la relation entre les numéros de permis des installations.
+Les notebooks valident la structure des fichiers, leur qualité et la relation entre les numéros de permis des installations. Snowflake assure ensuite la transformation des données selon les couches `RAW`, `STAGING`, `INTERMEDIATE` et `MARTS`.
 
-L'environnement Snowflake de développement contient la base `QUEBEC_HEALTH_DWH`, les schémas analytiques initiaux et un warehouse `X-SMALL` configuré pour s'arrêter automatiquement après 60 secondes d'inactivité.
+La couche analytique contient une dimension des installations, une table de faits des urgences horaires et un mart régional. Les requêtes du tableau de bord présentent les indicateurs globaux, le classement des régions et les installations qui demandent une attention prioritaire.
+
+L'environnement Snowflake de développement utilise la base `QUEBEC_HEALTH_DWH` et un warehouse `X-SMALL` configuré pour s'arrêter automatiquement après 60 secondes d'inactivité.
 
 ## Exécuter les notebooks
 
