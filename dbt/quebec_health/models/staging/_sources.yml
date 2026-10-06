@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: raw
-    database: QUEBEC_HEALTH_DWH
+    database: "{{ target.database }}"
     schema: raw
     tables:
       - name: urgences_horaires
