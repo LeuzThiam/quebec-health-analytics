@@ -30,7 +30,7 @@ def main() -> None:
     source_file = args.file or DEFAULT_FILE
 
     if args.file is None:
-        source_url, modified_at = download_file(source_file)
+        source_file, source_url, modified_at = download_file(source_file)
     else:
         modified_at = None
 

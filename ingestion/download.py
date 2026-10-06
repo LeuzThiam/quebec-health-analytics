@@ -9,6 +9,7 @@ from datetime import datetime
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.request import Request, urlopen
+from uuid import uuid4
 
 import pandas as pd
 
@@ -66,12 +67,14 @@ def discover_resource_url() -> str:
     raise RuntimeError("Ressource CSV des personnes présentes introuvable.")
 
 
-def download_file(destination: Path) -> tuple[str, datetime | None]:
+def download_file(destination: Path) -> tuple[Path, str, datetime | None]:
     """Télécharge atomiquement le fichier officiel vers le chemin demandé."""
     source_url = discover_resource_url()
     request = Request(source_url, headers={"User-Agent": "quebec-health-analytics/1.0"})
     destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary_path = destination.with_suffix(destination.suffix + ".part")
+    temporary_path = destination.with_name(
+        f".{destination.stem}.{uuid4().hex}{destination.suffix}.part"
+    )
 
     with urlopen(request, timeout=60) as response:
         content = response.read()
@@ -79,11 +82,18 @@ def download_file(destination: Path) -> tuple[str, datetime | None]:
 
     if not content:
         raise ValueError("Le fichier téléchargé est vide.")
-    temporary_path.write_bytes(content)
-    temporary_path.replace(destination)
+    sha256 = hashlib.sha256(content).hexdigest()
+    immutable_path = destination.with_name(
+        f"{destination.stem}_{sha256[:16]}{destination.suffix}"
+    )
+    try:
+        temporary_path.write_bytes(content)
+        temporary_path.replace(immutable_path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
 
     modified_at = parsedate_to_datetime(last_modified) if last_modified else None
-    return source_url, modified_at
+    return immutable_path, source_url, modified_at
 
 
 def validate_file(

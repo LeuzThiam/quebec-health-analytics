@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from datetime import datetime, timezone
 from uuid import uuid4
 
@@ -60,8 +61,17 @@ def load_emergency_file(file: DownloadedFile, settings: SnowflakeSettings) -> st
             ),
         )
 
+        current_sha256 = hashlib.sha256(file.path.read_bytes()).hexdigest()
+        if current_sha256 != file.sha256:
+            raise RuntimeError("Le fichier a changé après sa validation.")
+
         file_uri = file.path.resolve().as_posix().replace("'", "''")
-        cursor.execute(f"PUT 'file://{file_uri}' {stage} AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
+        staged_directory = f"{stage}/{file.sha256}"
+        staged_file = f"{staged_directory}/{file.path.name}"
+        cursor.execute(
+            f"PUT 'file://{file_uri}' {staged_directory} "
+            "AUTO_COMPRESS=FALSE OVERWRITE=TRUE"
+        )
 
         # Le lot est déterministe. Un nouvel essai remplace donc un éventuel lot
         # incomplet au lieu d'ajouter une deuxième copie des mêmes observations.
@@ -86,7 +96,7 @@ def load_emergency_file(file: DownloadedFile, settings: SnowflakeSettings) -> st
                        $12, $13, $14, $15, $16, $17,
                        METADATA$FILENAME, '{batch_id}',
                        TO_TIMESTAMP_TZ('{modified_at}')
-                FROM {stage}/{file.path.name}
+                FROM {staged_file}
             )
             FILE_FORMAT = (FORMAT_NAME = '{database}.RAW.CSV_URGENCES_CP1252')
             ON_ERROR = 'ABORT_STATEMENT'
