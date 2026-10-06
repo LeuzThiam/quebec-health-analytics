@@ -1,0 +1,32 @@
+version: 2
+
+sources:
+  - name: raw
+    database: "{{ target.database }}"
+    schema: raw
+    tables:
+      - name: urgences_horaires
+        identifier: URGENCES_HORAIRES_RAW
+      - name: installations
+        identifier: INSTALLATIONS_RAW
+
+models:
+  - name: stg_urgences_horaires
+    columns:
+      - name: no_permis_installation
+        data_tests:
+          - not_null:
+              config:
+                severity: warn
+      - name: niveau_agregation
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [PROVINCIAL, REGIONAL, INSTALLATION]
+
+  - name: stg_installations
+    columns:
+      - name: installation_code
+        data_tests:
+          - not_null
+          - unique
