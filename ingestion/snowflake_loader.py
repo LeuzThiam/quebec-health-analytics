@@ -18,8 +18,7 @@ SOURCE_DATASET = "EMERGENCY_HOURLY"
 def load_emergency_file(file: DownloadedFile, settings: SnowflakeSettings) -> str:
     """Charge un fichier une seule fois et journalise le résultat dans AUDIT."""
     run_id = str(uuid4())
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    batch_id = f"EMERG_{timestamp}_{file.sha256[:8].upper()}"
+    batch_id = f"EMERG_{file.sha256.upper()}"
     database = settings.database
     stage = f"@{database}.RAW.HEALTH_SOURCE_FILES"
     table = f"{database}.RAW.URGENCES_HORAIRES_RAW"
@@ -33,6 +32,7 @@ def load_emergency_file(file: DownloadedFile, settings: SnowflakeSettings) -> st
         database=database,
         role=settings.role,
     )
+    connection.autocommit(False)
     cursor = connection.cursor()
     try:
         cursor.execute(
@@ -41,6 +41,7 @@ def load_emergency_file(file: DownloadedFile, settings: SnowflakeSettings) -> st
             (SOURCE_DATASET, file.sha256),
         )
         if cursor.fetchone()[0] > 0:
+            connection.rollback()
             return "SKIPPED_ALREADY_LOADED"
 
         cursor.execute(
@@ -61,6 +62,10 @@ def load_emergency_file(file: DownloadedFile, settings: SnowflakeSettings) -> st
 
         file_uri = file.path.resolve().as_posix().replace("'", "''")
         cursor.execute(f"PUT 'file://{file_uri}' {stage} AUTO_COMPRESS=FALSE OVERWRITE=TRUE")
+
+        # Le lot est déterministe. Un nouvel essai remplace donc un éventuel lot
+        # incomplet au lieu d'ajouter une deuxième copie des mêmes observations.
+        cursor.execute(f"DELETE FROM {table} WHERE BATCH_ID = %s", (batch_id,))
 
         modified_at = (file.modified_at or datetime.now(timezone.utc)).isoformat()
         copy_sql = f"""
@@ -103,9 +108,22 @@ def load_emergency_file(file: DownloadedFile, settings: SnowflakeSettings) -> st
         connection.rollback()
         try:
             cursor.execute(
-                f"UPDATE {audit_table} SET COMPLETED_AT = CURRENT_TIMESTAMP(), "
-                "STATUS = 'FAILED', ERROR_MESSAGE = %s WHERE RUN_ID = %s",
-                (str(error)[:5000], run_id),
+                f"INSERT INTO {audit_table} "
+                "(RUN_ID, BATCH_ID, SOURCE_SYSTEM, SOURCE_DATASET, SOURCE_FILE, "
+                "SOURCE_SHA256, STARTED_AT, COMPLETED_AT, ROWS_RECEIVED, "
+                "STATUS, ERROR_MESSAGE) "
+                "SELECT %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP(), "
+                "CURRENT_TIMESTAMP(), %s, 'FAILED', %s",
+                (
+                    run_id,
+                    batch_id,
+                    SOURCE_SYSTEM,
+                    SOURCE_DATASET,
+                    file.path.name,
+                    file.sha256,
+                    file.row_count,
+                    str(error)[:5000],
+                ),
             )
             connection.commit()
         except Exception:

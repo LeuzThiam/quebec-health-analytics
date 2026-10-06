@@ -19,7 +19,7 @@ CKAN_API_URL = (
     f"?id={DATASET_ID}"
 )
 
-EXPECTED_COLUMNS = {
+EXPECTED_COLUMNS = (
     "RSS",
     "Region",
     "Nom_etablissement",
@@ -37,7 +37,7 @@ EXPECTED_COLUMNS = {
     "DMS_ambulatoire_horaire",
     "Heure_de_l'extraction_(image)",
     "Mise_a_jour",
-}
+)
 
 
 @dataclass(frozen=True)
@@ -97,9 +97,12 @@ def validate_file(
     data = pd.read_csv(path, encoding="cp1252", dtype=str)
     data.columns = data.columns.str.strip()
 
-    missing_columns = sorted(EXPECTED_COLUMNS.difference(data.columns))
-    if missing_columns:
-        raise ValueError("Colonnes obligatoires absentes : " + ", ".join(missing_columns))
+    actual_columns = tuple(data.columns)
+    if actual_columns != EXPECTED_COLUMNS:
+        raise ValueError(
+            "Ordre ou noms de colonnes inattendus. "
+            f"Attendu : {list(EXPECTED_COLUMNS)}; reçu : {list(actual_columns)}"
+        )
     if data.empty:
         raise ValueError("Le fichier ne contient aucune ligne.")
     if data["No_permis_installation"].dropna().str.strip().eq("").all():
