@@ -25,14 +25,17 @@ def load_emergency_file(file: DownloadedFile, settings: SnowflakeSettings) -> st
     table = f"{database}.RAW.URGENCES_HORAIRES_RAW"
     audit_table = f"{database}.AUDIT.INGESTION_RUN"
 
-    connection = snowflake.connector.connect(
+    connection_parameters = dict(
         account=settings.account,
         user=settings.user,
-        password=settings.password,
+        authenticator=settings.authenticator,
         warehouse=settings.warehouse,
         database=database,
         role=settings.role,
     )
+    if settings.password:
+        connection_parameters["password"] = settings.password
+    connection = snowflake.connector.connect(**connection_parameters)
     connection.autocommit(False)
     cursor = connection.cursor()
     try:

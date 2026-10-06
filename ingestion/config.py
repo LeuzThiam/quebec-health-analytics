@@ -14,7 +14,8 @@ _IDENTIFIER_PATTERN = re.compile(r"^[A-Z][A-Z0-9_$]*$")
 class SnowflakeSettings:
     account: str
     user: str
-    password: str
+    password: str | None = None
+    authenticator: str = "externalbrowser"
     warehouse: str = "HEALTH_ELT_WH"
     database: str = "QUEBEC_HEALTH_DWH"
     role: str = "QUEBEC_HEALTH_INGESTION"
@@ -24,7 +25,6 @@ class SnowflakeSettings:
         required = {
             "account": os.getenv("SNOWFLAKE_ACCOUNT"),
             "user": os.getenv("SNOWFLAKE_USER"),
-            "password": os.getenv("SNOWFLAKE_PASSWORD"),
         }
         missing = [name for name, value in required.items() if not value]
         if missing:
@@ -35,7 +35,10 @@ class SnowflakeSettings:
         settings = cls(
             account=required["account"],
             user=required["user"],
-            password=required["password"],
+            password=os.getenv("SNOWFLAKE_PASSWORD") or None,
+            authenticator=os.getenv(
+                "SNOWFLAKE_AUTHENTICATOR", "externalbrowser"
+            ),
             warehouse=os.getenv("SNOWFLAKE_WAREHOUSE", "HEALTH_ELT_WH"),
             database=os.getenv("SNOWFLAKE_DATABASE", "QUEBEC_HEALTH_DWH"),
             role=os.getenv("SNOWFLAKE_ROLE", "QUEBEC_HEALTH_INGESTION"),
@@ -43,4 +46,6 @@ class SnowflakeSettings:
         for value in (settings.warehouse, settings.database, settings.role):
             if not _IDENTIFIER_PATTERN.fullmatch(value):
                 raise ValueError(f"Identifiant Snowflake invalide : {value}")
+        if settings.authenticator == "snowflake" and not settings.password:
+            raise RuntimeError("SNOWFLAKE_PASSWORD est requis avec authenticator=snowflake.")
         return settings
