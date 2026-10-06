@@ -1,0 +1,46 @@
+name: dbt validation
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "dbt/**"
+      - "requirements.txt"
+      - ".github/workflows/dbt-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  parse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SNOWFLAKE_ACCOUNT: validation_account
+      SNOWFLAKE_USER: validation_user
+      SNOWFLAKE_PASSWORD: validation_password
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dbt
+        run: python -m pip install "dbt-snowflake==1.12.1"
+
+      - name: Parse dbt project
+        run: >-
+          dbt parse
+          --project-dir dbt/quebec_health
+          --profiles-dir dbt/quebec_health
+
+      - name: List dbt resources
+        run: >-
+          dbt ls
+          --project-dir dbt/quebec_health
+          --profiles-dir dbt/quebec_health
