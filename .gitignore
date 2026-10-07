@@ -33,6 +33,7 @@ Thumbs.db
 # Local artifacts
 .codex_notes_render/
 data/
+.env
 artifacts/
 
 # Local project planning
