@@ -20,6 +20,7 @@ venv/
 dbt/**/target/
 dbt/**/logs/
 dbt/**/dbt_packages/
+dbt/**/.user.yml
 
 # IDE and OS
 .idea/
@@ -32,6 +33,7 @@ Thumbs.db
 # Local artifacts
 .codex_notes_render/
 data/
+.env
 artifacts/
 
 # Local project planning
