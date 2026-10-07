@@ -17,7 +17,7 @@ models:
         data_tests:
           - not_null:
               config:
-                severity: warn
+                where: "niveau_agregation = 'INSTALLATION'"
       - name: niveau_agregation
         data_tests:
           - accepted_values:
