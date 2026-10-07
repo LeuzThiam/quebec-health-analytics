@@ -6,7 +6,7 @@ on:
     paths:
       - "dbt/**"
       - "requirements.txt"
-      - ".github/workflows/dbt-ci.yml"
+      - ".github/workflows/**"
 
 permissions:
   contents: read
