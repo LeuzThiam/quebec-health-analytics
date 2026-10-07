@@ -71,6 +71,7 @@ def load_emergency_file(file: DownloadedFile, settings: SnowflakeSettings) -> st
         file_uri = file.path.resolve().as_posix().replace("'", "''")
         staged_directory = f"{stage}/{file.sha256}"
         staged_file = f"{staged_directory}/{file.path.name}"
+        quoted_staged_file = staged_file.replace("'", "''")
         cursor.execute(
             f"PUT 'file://{file_uri}' {staged_directory} "
             "AUTO_COMPRESS=FALSE OVERWRITE=TRUE"
@@ -99,7 +100,7 @@ def load_emergency_file(file: DownloadedFile, settings: SnowflakeSettings) -> st
                        $12, $13, $14, $15, $16, $17,
                        METADATA$FILENAME, '{batch_id}',
                        TO_TIMESTAMP_TZ('{modified_at}')
-                FROM {staged_file}
+                FROM '{quoted_staged_file}'
             )
             FILE_FORMAT = (FORMAT_NAME = '{database}.RAW.CSV_URGENCES_CP1252')
             ON_ERROR = 'ABORT_STATEMENT'
