@@ -40,6 +40,15 @@ EXPECTED_COLUMNS = (
     "Mise_a_jour",
 )
 
+HTTP_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/json,text/csv,application/octet-stream;q=0.9,*/*;q=0.8",
+    "Accept-Language": "fr-CA,fr;q=0.9,en;q=0.7",
+}
+
 
 @dataclass(frozen=True)
 class DownloadedFile:
@@ -52,7 +61,7 @@ class DownloadedFile:
 
 def discover_resource_url() -> str:
     """Retourne l'URL du fichier horaire comprenant les personnes présentes."""
-    request = Request(CKAN_API_URL, headers={"User-Agent": "quebec-health-analytics/1.0"})
+    request = Request(CKAN_API_URL, headers=HTTP_HEADERS)
     with urlopen(request, timeout=30) as response:
         payload = json.load(response)
 
@@ -70,7 +79,10 @@ def discover_resource_url() -> str:
 def download_file(destination: Path) -> tuple[Path, str, datetime | None]:
     """Télécharge atomiquement le fichier officiel vers le chemin demandé."""
     source_url = discover_resource_url()
-    request = Request(source_url, headers={"User-Agent": "quebec-health-analytics/1.0"})
+    request = Request(
+        source_url,
+        headers={**HTTP_HEADERS, "Referer": "https://www.msss.gouv.qc.ca/"},
+    )
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = destination.with_name(
         f".{destination.stem}.{uuid4().hex}{destination.suffix}.part"
