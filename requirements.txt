@@ -1,4 +1,4 @@
-pandas==3.0.6
+pandas==2.3.3
 jupyterlab==4.6.4
 snowflake-connector-python[pandas]==4.2.0
 dbt-snowflake==1.12.1
