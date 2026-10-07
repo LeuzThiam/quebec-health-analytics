@@ -12,6 +12,10 @@ with urgences as (
 select
     urgence.date_heure_mise_a_jour,
     urgence.heure_extraction,
+    coalesce(
+        timestamp_ntz_from_parts(urgence.date_heure_mise_a_jour::date, urgence.heure_extraction),
+        urgence.date_heure_mise_a_jour
+    ) as snapshot_at,
     urgence.rss_code,
     urgence.region,
     urgence.no_permis_installation,

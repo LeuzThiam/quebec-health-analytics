@@ -1,7 +1,10 @@
 -- Une ligne par minute afin de supporter les snapshots horaires et leurs variations.
 with minutes as (
-    select dateadd(minute, seq4(), '00:00:00'::time) as time_value
-    from table(generator(rowcount => 1440))
+    select dateadd(minute, minute_offset, '00:00:00'::time) as time_value
+    from (
+        select row_number() over (order by seq4()) - 1 as minute_offset
+        from table(generator(rowcount => 1440))
+    )
 )
 
 select
@@ -16,4 +19,3 @@ select
         else 'SOIREE'
     end as time_of_day
 from minutes
-

@@ -1,7 +1,10 @@
 -- Calendrier partagé par les faits du Data Warehouse.
 with dates as (
-    select dateadd(day, seq4(), '2020-01-01'::date) as date_day
-    from table(generator(rowcount => 15000))
+    select dateadd(day, day_offset, '2020-01-01'::date) as date_day
+    from (
+        select row_number() over (order by seq4()) - 1 as day_offset
+        from table(generator(rowcount => 15000))
+    )
 )
 
 select
@@ -18,4 +21,3 @@ select
     case when month(date_day) >= 4 then year(date_day) + 1 else year(date_day) end as fiscal_year,
     mod(month(date_day) - 4 + 12, 12) + 1 as fiscal_period
 from dates
-
