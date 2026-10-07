@@ -1,0 +1,13 @@
+quebec_health:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
+      role: "{{ env_var('SNOWFLAKE_ROLE', 'QUEBEC_HEALTH_TRANSFORM') }}"
+      database: "{{ env_var('SNOWFLAKE_DATABASE', 'QUEBEC_HEALTH_DWH') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'HEALTH_ELT_WH') }}"
+      schema: staging
+      threads: 4

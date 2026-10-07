@@ -1,0 +1,58 @@
+version: 2
+
+models:
+  - name: dim_date
+    columns:
+      - name: date_key
+        data_tests: [not_null, unique]
+
+  - name: dim_time
+    columns:
+      - name: time_key
+        data_tests: [not_null, unique]
+
+  - name: dim_region
+    columns:
+      - name: region_key
+        data_tests: [not_null, unique]
+
+  - name: dim_installations_urgence
+    columns:
+      - name: facility_key
+        data_tests: [not_null, unique]
+      - name: region_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+
+  - name: fct_urgences_horaires
+    columns:
+      - name: emergency_snapshot_key
+        data_tests: [not_null, unique]
+      - name: facility_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_installations_urgence')
+                field: facility_key
+      - name: region_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+      - name: date_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: time_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_time')
+                field: time_key
+
