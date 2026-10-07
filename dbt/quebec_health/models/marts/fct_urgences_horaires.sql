@@ -13,11 +13,11 @@ with snapshots as (
     from {{ ref('int_urgences_enrichies') }}
     where snapshot_at is not null
     {% if is_incremental() %}
-        -- Relire la dernière heure permet de rejouer un lot sans créer de doublon.
-        and snapshot_at >= dateadd(
+        -- Le watermark technique inclut aussi les corrections et backfills arrivés tardivement.
+        and loaded_at >= dateadd(
             hour,
             -1,
-            (select coalesce(max(snapshot_at), '1900-01-01'::timestamp_ntz) from {{ this }})
+            (select coalesce(max(loaded_at), '1900-01-01'::timestamp_tz) from {{ this }})
         )
     {% endif %}
 )
