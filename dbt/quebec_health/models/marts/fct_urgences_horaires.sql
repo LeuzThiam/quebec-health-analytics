@@ -1,4 +1,9 @@
 select
+    md5(concat_ws('|', no_permis_installation, date_heure_mise_a_jour::varchar)) as emergency_snapshot_key,
+    md5(no_permis_installation) as facility_key,
+    md5(coalesce(rss_code, region)) as region_key,
+    to_number(to_char(date_heure_mise_a_jour::date, 'YYYYMMDD')) as date_key,
+    hour(date_heure_mise_a_jour) * 100 + minute(date_heure_mise_a_jour) as time_key,
     date_heure_mise_a_jour as snapshot_at,
     no_permis_installation as installation_id,
     nombre_civieres_fonctionnelles,
