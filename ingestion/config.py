@@ -32,13 +32,15 @@ class SnowflakeSettings:
                 "Variables Snowflake manquantes : " + ", ".join(missing)
             )
 
+        password = os.getenv("SNOWFLAKE_PASSWORD") or None
+        authenticator = os.getenv("SNOWFLAKE_AUTHENTICATOR") or (
+            "snowflake" if password else "externalbrowser"
+        )
         settings = cls(
             account=required["account"],
             user=required["user"],
-            password=os.getenv("SNOWFLAKE_PASSWORD") or None,
-            authenticator=os.getenv(
-                "SNOWFLAKE_AUTHENTICATOR", "externalbrowser"
-            ),
+            password=password,
+            authenticator=authenticator,
             warehouse=os.getenv("SNOWFLAKE_WAREHOUSE", "HEALTH_ELT_WH"),
             database=os.getenv("SNOWFLAKE_DATABASE", "QUEBEC_HEALTH_DWH"),
             role=os.getenv("SNOWFLAKE_ROLE", "QUEBEC_HEALTH_INGESTION"),
