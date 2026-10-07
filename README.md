@@ -25,3 +25,21 @@ python -m jupyter lab
 ```
 
 Les fichiers téléchargés sont conservés localement dans `data/exploration` et ne sont pas versionnés.
+
+## Automatisation locale
+
+L'ingestion horaire s'exécute depuis Windows, car le serveur source du MSSS refuse les téléchargements provenant des runners GitHub. La configuration Snowflake est enregistrée hors du dépôt et le mot de passe est chiffré par Windows pour l'utilisateur courant.
+
+Initialisation unique :
+
+```powershell
+.\automation\run_hourly_pipeline.ps1 -Initialize
+```
+
+Exécution complète de l'ingestion et des transformations dbt :
+
+```powershell
+.\automation\run_hourly_pipeline.ps1
+```
+
+Les journaux d'exécution sont conservés dans `%LOCALAPPDATA%\QuebecHealthAnalytics\logs`.
