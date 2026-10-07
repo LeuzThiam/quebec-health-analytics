@@ -1,3 +1,27 @@
+{{
+    config(
+        materialized='incremental',
+        unique_key='emergency_snapshot_key',
+        incremental_strategy='merge',
+        on_schema_change='sync_all_columns',
+        cluster_by=['snapshot_at']
+    )
+}}
+
+with snapshots as (
+    select *
+    from {{ ref('int_urgences_enrichies') }}
+    where snapshot_at is not null
+    {% if is_incremental() %}
+        -- Relire la dernière heure permet de rejouer un lot sans créer de doublon.
+        and snapshot_at >= dateadd(
+            hour,
+            -1,
+            (select coalesce(max(snapshot_at), '1900-01-01'::timestamp_ntz) from {{ this }})
+        )
+    {% endif %}
+)
+
 select
     md5(concat_ws('|', no_permis_installation, snapshot_at::varchar)) as emergency_snapshot_key,
     md5(no_permis_installation) as facility_key,
@@ -18,4 +42,4 @@ select
     niveau_occupation,
     source_file,
     loaded_at
-from {{ ref('int_urgences_enrichies') }}
+from snapshots
