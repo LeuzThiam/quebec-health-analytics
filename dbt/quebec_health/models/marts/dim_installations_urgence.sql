@@ -1,4 +1,6 @@
 select
+    md5(no_permis_installation) as facility_key,
+    md5(coalesce(rss_code, region)) as region_key,
     no_permis_installation as installation_id,
     nom_installation,
     nom_etablissement,
