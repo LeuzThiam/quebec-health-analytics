@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from config import SnowflakeSettings
 from surgery_download import download_file, validate_file
+from surgery_loader import load_surgery_file
 
 
 DEFAULT_FILE = Path("data/incoming/chirurgie_liste_attente.csv")
@@ -42,7 +44,11 @@ def main() -> None:
         print("Validation terminée, aucun chargement Snowflake effectué.")
         return
 
-    print("Le chargement Snowflake sera ajouté à l'étape suivante.")
+    batch_id = load_surgery_file(
+        validated_file,
+        SnowflakeSettings.from_environment(),
+    )
+    print(f"Résultat du chargement : {batch_id}")
 
 
 if __name__ == "__main__":
