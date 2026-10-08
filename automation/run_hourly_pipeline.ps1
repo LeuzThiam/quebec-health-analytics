@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [switch]$Initialize
+    [switch]$Initialize,
+    [switch]$InstallScheduledTask
 )
 
 Set-StrictMode -Version Latest
@@ -29,8 +30,47 @@ function Initialize-SnowflakeConfiguration {
     Write-Host "Configuration enregistrée de manière sécurisée pour l'utilisateur Windows actuel."
 }
 
+function Install-HourlyScheduledTask {
+    $taskName = "Quebec Health Analytics - Hourly Pipeline"
+    $powerShellExecutable = (Get-Process -Id $PID).Path
+    $scriptPath = $PSCommandPath
+    $arguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}"' -f $scriptPath
+    $action = New-ScheduledTaskAction -Execute $powerShellExecutable -Argument $arguments -WorkingDirectory $projectRoot
+    $trigger = New-ScheduledTaskTrigger `
+        -Once `
+        -At ((Get-Date).AddMinutes(1)) `
+        -RepetitionInterval (New-TimeSpan -Hours 1)
+    $windowsUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+    $windowsCredential = Get-Credential `
+        -UserName $windowsUser `
+        -Message "Entrez votre mot de passe Windows pour autoriser l'exécution après déconnexion"
+    $windowsPassword = $windowsCredential.GetNetworkCredential().Password
+
+    try {
+        Register-ScheduledTask `
+            -TaskName $taskName `
+            -Action $action `
+            -Trigger $trigger `
+            -User $windowsCredential.UserName `
+            -Password $windowsPassword `
+            -Description "Ingestion horaire des urgences et transformations dbt." `
+            -Force | Out-Null
+    }
+    finally {
+        $windowsPassword = $null
+        $windowsCredential = $null
+    }
+
+    Write-Host "Tâche planifiée installée : $taskName"
+}
+
 if ($Initialize) {
     Initialize-SnowflakeConfiguration
+    exit 0
+}
+
+if ($InstallScheduledTask) {
+    Install-HourlyScheduledTask
     exit 0
 }
 
@@ -54,12 +94,26 @@ $logFile = Join-Path $logsDirectory ("pipeline_{0}.log" -f (Get-Date -Format "yy
 $configuration = Get-Content -LiteralPath $configurationFile -Raw | ConvertFrom-Json
 $credential = Import-Clixml -LiteralPath $credentialFile
 $plainPassword = $credential.GetNetworkCredential().Password
+$snowflakeVariables = @(
+    "SNOWFLAKE_ACCOUNT",
+    "SNOWFLAKE_USER",
+    "SNOWFLAKE_PASSWORD",
+    "SNOWFLAKE_AUTHENTICATOR",
+    "SNOWFLAKE_WAREHOUSE",
+    "SNOWFLAKE_DATABASE",
+    "SNOWFLAKE_ROLE"
+)
+$previousEnvironment = @{}
+foreach ($variableName in $snowflakeVariables) {
+    $previousEnvironment[$variableName] = [Environment]::GetEnvironmentVariable($variableName, "Process")
+}
 
 Start-Transcript -LiteralPath $logFile | Out-Null
 try {
     $env:SNOWFLAKE_ACCOUNT = $configuration.account
     $env:SNOWFLAKE_USER = $credential.UserName
     $env:SNOWFLAKE_PASSWORD = $plainPassword
+    $env:SNOWFLAKE_AUTHENTICATOR = "snowflake"
     $env:SNOWFLAKE_WAREHOUSE = "HEALTH_ELT_WH"
     $env:SNOWFLAKE_DATABASE = "QUEBEC_HEALTH_DWH"
     $env:SNOWFLAKE_ROLE = "QUEBEC_HEALTH_INGESTION"
@@ -85,7 +139,13 @@ try {
 }
 finally {
     $plainPassword = $null
-    Remove-Item Env:SNOWFLAKE_PASSWORD -ErrorAction SilentlyContinue
+    foreach ($variableName in $snowflakeVariables) {
+        [Environment]::SetEnvironmentVariable(
+            $variableName,
+            $previousEnvironment[$variableName],
+            "Process"
+        )
+    }
     Stop-Transcript | Out-Null
 }
 

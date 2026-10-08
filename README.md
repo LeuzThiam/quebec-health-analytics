@@ -36,6 +36,14 @@ Initialisation unique :
 .\automation\run_hourly_pipeline.ps1 -Initialize
 ```
 
+Installation unique de l'exécution automatique toutes les heures :
+
+```powershell
+.\automation\run_hourly_pipeline.ps1 -InstallScheduledTask
+```
+
+Windows demande alors le mot de passe du compte local afin d'autoriser l'exécution même lorsque la session est fermée. Ce mot de passe est transmis uniquement au Planificateur de tâches Windows et n'est pas enregistré dans le projet.
+
 Exécution complète de l'ingestion et des transformations dbt :
 
 ```powershell
