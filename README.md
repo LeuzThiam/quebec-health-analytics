@@ -44,6 +44,14 @@ Installation unique de l'exécution automatique toutes les heures :
 
 Windows demande alors le mot de passe du compte local afin d'autoriser l'exécution même lorsque la session est fermée. Ce mot de passe est transmis uniquement au Planificateur de tâches Windows et n'est pas enregistré dans le projet.
 
+Pour un compte Windows sans mot de passe, installer plutôt la tâche en mode session ouverte :
+
+```powershell
+.\automation\run_hourly_pipeline.ps1 -InstallScheduledTask -RunOnlyWhenLoggedOn
+```
+
+Dans ce mode, aucun mot de passe Windows n'est demandé. La tâche s'exécute uniquement lorsque l'utilisateur est connecté.
+
 Exécution complète de l'ingestion et des transformations dbt :
 
 ```powershell

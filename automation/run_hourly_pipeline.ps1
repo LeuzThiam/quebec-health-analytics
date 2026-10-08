@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [switch]$Initialize,
-    [switch]$InstallScheduledTask
+    [switch]$InstallScheduledTask,
+    [switch]$RunOnlyWhenLoggedOn
 )
 
 Set-StrictMode -Version Latest
@@ -41,24 +42,40 @@ function Install-HourlyScheduledTask {
         -At ((Get-Date).AddMinutes(1)) `
         -RepetitionInterval (New-TimeSpan -Hours 1)
     $windowsUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
-    $windowsCredential = Get-Credential `
-        -UserName $windowsUser `
-        -Message "Entrez votre mot de passe Windows pour autoriser l'exécution après déconnexion"
-    $windowsPassword = $windowsCredential.GetNetworkCredential().Password
 
-    try {
+    if ($RunOnlyWhenLoggedOn) {
+        $principal = New-ScheduledTaskPrincipal `
+            -UserId $windowsUser `
+            -LogonType Interactive `
+            -RunLevel Limited
         Register-ScheduledTask `
             -TaskName $taskName `
             -Action $action `
             -Trigger $trigger `
-            -User $windowsCredential.UserName `
-            -Password $windowsPassword `
+            -Principal $principal `
             -Description "Ingestion horaire des urgences et transformations dbt." `
             -Force | Out-Null
     }
-    finally {
-        $windowsPassword = $null
-        $windowsCredential = $null
+    else {
+        $windowsCredential = Get-Credential `
+            -UserName $windowsUser `
+            -Message "Entrez votre mot de passe Windows pour autoriser l'exécution après déconnexion"
+        $windowsPassword = $windowsCredential.GetNetworkCredential().Password
+
+        try {
+            Register-ScheduledTask `
+                -TaskName $taskName `
+                -Action $action `
+                -Trigger $trigger `
+                -User $windowsCredential.UserName `
+                -Password $windowsPassword `
+                -Description "Ingestion horaire des urgences et transformations dbt." `
+                -Force | Out-Null
+        }
+        finally {
+            $windowsPassword = $null
+            $windowsCredential = $null
+        }
     }
 
     Write-Host "Tâche planifiée installée : $taskName"
