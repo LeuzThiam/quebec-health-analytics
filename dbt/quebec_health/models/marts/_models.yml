@@ -56,3 +56,32 @@ models:
                 to: ref('dim_time')
                 field: time_key
 
+  - name: agg_emergency_daily
+    description: Indicateurs quotidiens par installation pour le suivi de la pression aux urgences.
+    columns:
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: facility_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_installations_urgence')
+                field: facility_key
+      - name: region_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+      - name: snapshot_count
+        data_tests: [not_null]
+      - name: observed_hours
+        data_tests: [not_null]
+
