@@ -75,7 +75,10 @@ def load_cumulative_file(file: CumulativeFile, settings: SnowflakeSettings) -> s
             f"PUT 'file://{file_uri}' {staged_directory} "
             "AUTO_COMPRESS=FALSE OVERWRITE=TRUE"
         )
-        cursor.execute(f"DELETE FROM {table} WHERE BATCH_ID = %s", (batch_id,))
+        # La ressource cumulative republie un instantané complet. Une nouvelle
+        # version remplace donc le contenu précédent afin qu'une correction du
+        # MSSS ne duplique pas une granularité métier sous un autre lot.
+        cursor.execute(f"DELETE FROM {table}")
 
         modified_at = (file.modified_at or datetime.now(timezone.utc)).isoformat()
         raw_columns = ", ".join(column.upper() for column in (
