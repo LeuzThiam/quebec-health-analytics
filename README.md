@@ -4,14 +4,15 @@ Plateforme de données destinée à analyser la pression sur les urgences, l'acc
 
 ## État actuel
 
-Le projet dispose maintenant d'un premier pipeline analytique fonctionnel à partir de deux jeux de données officiels du MSSS :
+Le projet dispose maintenant d'un pipeline analytique fonctionnel à partir de trois jeux de données officiels du MSSS :
 
 - la situation horaire dans les urgences;
+- l'historique cumulatif des urgences par période financière;
 - le référentiel M02 des installations.
 
 Les notebooks valident la structure des fichiers, leur qualité et la relation entre les numéros de permis des installations. Snowflake assure ensuite la transformation des données selon les couches `RAW`, `STAGING`, `INTERMEDIATE` et `MARTS`.
 
-La couche analytique contient une dimension des installations, une table de faits des urgences horaires et un mart régional. Les requêtes du tableau de bord présentent les indicateurs globaux, le classement des régions et les installations qui demandent une attention prioritaire.
+La couche analytique contient une dimension des installations, une table de faits des urgences horaires, une table de faits cumulative et un mart régional. Elle permet d'analyser la pression actuelle ainsi que son évolution sur plusieurs années financières.
 
 L'environnement Snowflake de développement utilise la base `QUEBEC_HEALTH_DWH` et un warehouse `X-SMALL` configuré pour s'arrêter automatiquement après 60 secondes d'inactivité.
 
@@ -59,3 +60,9 @@ Exécution complète de l'ingestion et des transformations dbt :
 ```
 
 Les journaux d'exécution sont conservés dans `%LOCALAPPDATA%\QuebecHealthAnalytics\logs`.
+
+Le fichier cumulatif évolue par période financière et reste volontairement séparé de la tâche horaire. Son ingestion se lance au besoin avec :
+
+```powershell
+.\venv\Scripts\python.exe .\ingestion\emergency_cumulative.py
+```
