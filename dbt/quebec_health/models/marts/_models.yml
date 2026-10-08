@@ -85,3 +85,18 @@ models:
       - name: observed_hours
         data_tests: [not_null]
 
+  - name: fct_urgences_cumulatives
+    description: Historique cumulatif des urgences par année financière, période et niveau organisationnel.
+    columns:
+      - name: emergency_cumulative_key
+        data_tests: [not_null, unique]
+      - name: annee_financiere
+        data_tests: [not_null]
+      - name: cumul_periode
+        data_tests: [not_null]
+      - name: niveau_agregation
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [PROVINCIAL, REGIONAL, ETABLISSEMENT, INSTALLATION]
+

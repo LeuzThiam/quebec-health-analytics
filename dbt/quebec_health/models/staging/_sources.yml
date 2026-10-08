@@ -9,6 +9,8 @@ sources:
         identifier: URGENCES_HORAIRES_RAW
       - name: installations
         identifier: INSTALLATIONS_RAW
+      - name: urgences_cumulatives
+        identifier: URGENCES_CUMULATIVES_RAW
 
 models:
   - name: stg_urgences_horaires
@@ -30,3 +32,15 @@ models:
         data_tests:
           - not_null
           - unique
+
+  - name: stg_urgences_cumulatives
+    columns:
+      - name: annee_financiere
+        data_tests: [not_null]
+      - name: cumul_periode
+        data_tests: [not_null]
+      - name: niveau_agregation
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [PROVINCIAL, REGIONAL, ETABLISSEMENT, INSTALLATION]
