@@ -42,8 +42,9 @@ def load_cumulative_file(file: CumulativeFile, settings: SnowflakeSettings) -> s
     try:
         cursor.execute(
             f"SELECT COUNT(*) FROM {audit_table} "
-            "WHERE SOURCE_DATASET = %s AND SOURCE_SHA256 = %s AND STATUS = 'SUCCESS'",
-            (SOURCE_DATASET, file.sha256),
+            "WHERE SOURCE_DATASET = %s AND SOURCE_SHA256 = %s AND STATUS = 'SUCCESS' "
+            f"AND EXISTS (SELECT 1 FROM {table} WHERE BATCH_ID = %s)",
+            (SOURCE_DATASET, file.sha256, batch_id),
         )
         if cursor.fetchone()[0] > 0:
             connection.rollback()
