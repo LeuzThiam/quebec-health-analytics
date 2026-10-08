@@ -108,7 +108,8 @@ foreach ($variableName in $snowflakeVariables) {
     $previousEnvironment[$variableName] = [Environment]::GetEnvironmentVariable($variableName, "Process")
 }
 
-Start-Transcript -LiteralPath $logFile | Out-Null
+"$(Get-Date -Format o) - Démarrage du pipeline horaire." |
+    Tee-Object -FilePath $logFile -Append
 try {
     $env:SNOWFLAKE_ACCOUNT = $configuration.account
     $env:SNOWFLAKE_USER = $credential.UserName
@@ -120,22 +121,42 @@ try {
 
     Push-Location $projectRoot
     try {
-        & $pythonExecutable ".\ingestion\emergency_hourly.py"
-        if ($LASTEXITCODE -ne 0) {
-            throw "L'ingestion Python a échoué avec le code $LASTEXITCODE."
+        & $pythonExecutable ".\ingestion\emergency_hourly.py" 2>&1 | ForEach-Object {
+            Add-Content -LiteralPath $logFile -Value $_
+            Write-Host $_
+        }
+        $pythonExitCode = $LASTEXITCODE
+        "$(Get-Date -Format o) - Ingestion terminée avec le code $pythonExitCode." |
+            Tee-Object -FilePath $logFile -Append
+        if ($pythonExitCode -ne 0) {
+            throw "L'ingestion Python a échoué avec le code $pythonExitCode."
         }
 
         $env:SNOWFLAKE_ROLE = "QUEBEC_HEALTH_TRANSFORM"
         & $dbtExecutable build `
             --project-dir ".\dbt\quebec_health" `
-            --profiles-dir ".\dbt\quebec_health"
-        if ($LASTEXITCODE -ne 0) {
-            throw "La transformation dbt a échoué avec le code $LASTEXITCODE."
+            --profiles-dir ".\dbt\quebec_health" 2>&1 | ForEach-Object {
+                Add-Content -LiteralPath $logFile -Value $_
+                Write-Host $_
+            }
+        $dbtExitCode = $LASTEXITCODE
+        "$(Get-Date -Format o) - dbt terminé avec le code $dbtExitCode." |
+            Tee-Object -FilePath $logFile -Append
+        if ($dbtExitCode -ne 0) {
+            throw "La transformation dbt a échoué avec le code $dbtExitCode."
         }
+
+        "$(Get-Date -Format o) - Pipeline terminé avec succès." |
+            Tee-Object -FilePath $logFile -Append
     }
     finally {
         Pop-Location
     }
+}
+catch {
+    "$(Get-Date -Format o) - ÉCHEC : $($_.Exception.Message)" |
+        Tee-Object -FilePath $logFile -Append
+    throw
 }
 finally {
     $plainPassword = $null
@@ -146,6 +167,5 @@ finally {
             "Process"
         )
     }
-    Stop-Transcript | Out-Null
 }
 
