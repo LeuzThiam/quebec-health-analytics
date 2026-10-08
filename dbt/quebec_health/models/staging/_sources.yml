@@ -11,6 +11,8 @@ sources:
         identifier: INSTALLATIONS_RAW
       - name: urgences_cumulatives
         identifier: URGENCES_CUMULATIVES_RAW
+      - name: surgery_waitlist
+        identifier: SURGERY_WAITLIST_RAW
 
 models:
   - name: stg_urgences_horaires
@@ -44,3 +46,12 @@ models:
           - accepted_values:
               arguments:
                 values: [PROVINCIAL, REGIONAL, ETABLISSEMENT, INSTALLATION]
+
+  - name: stg_surgery_waitlist
+    columns:
+      - name: financial_period
+        data_tests: [not_null]
+      - name: wait_bucket
+        data_tests: [not_null]
+      - name: region_code
+        data_tests: [not_null]

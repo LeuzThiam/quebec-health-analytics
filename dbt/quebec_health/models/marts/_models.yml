@@ -100,3 +100,40 @@ models:
               arguments:
                 values: [PROVINCIAL, REGIONAL, ETABLISSEMENT, INSTALLATION]
 
+  - name: dim_specialty
+    columns:
+      - name: specialty_key
+        data_tests: [not_null, unique]
+      - name: specialty_code
+        data_tests: [not_null, unique]
+
+  - name: dim_wait_bucket
+    columns:
+      - name: wait_bucket_key
+        data_tests: [not_null, unique]
+      - name: wait_bucket
+        data_tests: [not_null, unique]
+
+  - name: fct_surgery_waitlist
+    columns:
+      - name: surgery_waitlist_key
+        data_tests: [not_null, unique]
+      - name: region_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+      - name: specialty_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_specialty')
+                field: specialty_key
+      - name: wait_bucket_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_wait_bucket')
+                field: wait_bucket_key
+
