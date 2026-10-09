@@ -20,6 +20,17 @@ from download import HTTP_HEADERS
 SOURCE_URL = "https://www150.statcan.gc.ca/n1/fr/tbl/csv/17100157-fra.zip"
 SOURCE_MEMBER = "17100157.csv"
 REGION_DGUID_PATTERN = re.compile(r"^24\d{2}-[A-I]$")
+FIRST_REFERENCE_YEAR = 2001
+MINIMUM_LATEST_REFERENCE_YEAR = 2025
+EXPECTED_AGE_GROUP_COUNT = 110
+REQUIRED_AGE_GROUPS = {
+    "Total, tous les âges",
+    "Moins d'un an",
+    "1 à 4 ans",
+    "5 à 9 ans",
+    "85 à 89 ans",
+    "90 ans et plus",
+}
 OUTPUT_COLUMNS = (
     "reference_year",
     "health_region_name",
@@ -161,14 +172,35 @@ def validate_file(
     if set(data["sex"].unique()) != {"Total - genre", "Hommes+", "Femmes+"}:
         raise ValueError("Les catégories de genre StatCan ont changé.")
 
+    years = pd.to_numeric(data["reference_year"], errors="coerce")
+    if years.isna().any():
+        raise ValueError("Une année de référence est invalide.")
+    year_domain = set(years.astype(int).unique())
+    latest_year = max(year_domain)
+    expected_year_domain = set(range(FIRST_REFERENCE_YEAR, latest_year + 1))
+    if (
+        latest_year < MINIMUM_LATEST_REFERENCE_YEAR
+        or year_domain != expected_year_domain
+    ):
+        raise ValueError(
+            "L'historique annuel StatCan est incomplet ou non contigu depuis 2001."
+        )
+
+    age_group_domain = set(data["age_group"].unique())
+    if (
+        len(age_group_domain) != EXPECTED_AGE_GROUP_COUNT
+        or not REQUIRED_AGE_GROUPS.issubset(age_group_domain)
+    ):
+        raise ValueError("Le domaine attendu des groupes d'âge StatCan est incomplet.")
+
     values = pd.to_numeric(data["value"], errors="coerce")
     if values.isna().any() or (values < 0).any():
         raise ValueError("Une valeur de population est absente, invalide ou négative.")
 
     expected_rows = (
-        data["reference_year"].nunique()
+        len(expected_year_domain)
         * data["health_region_code"].nunique()
-        * data["age_group"].nunique()
+        * EXPECTED_AGE_GROUP_COUNT
         * data["sex"].nunique()
     )
     if len(data) != expected_rows:
