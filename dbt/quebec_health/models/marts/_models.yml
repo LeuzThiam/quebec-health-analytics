@@ -142,3 +142,53 @@ models:
                 to: ref('dim_wait_bucket')
                 field: wait_bucket_key
 
+  - name: dim_age_group
+    columns:
+      - name: age_group_key
+        data_tests: [not_null, unique]
+      - name: age_group_label
+        data_tests: [not_null, unique]
+      - name: aggregation_level
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [TOTAL, SINGLE_YEAR, STANDARD_GROUP]
+
+  - name: dim_sex
+    columns:
+      - name: sex_key
+        data_tests: [not_null, unique]
+      - name: sex_code
+        data_tests:
+          - not_null
+          - unique
+          - accepted_values:
+              arguments:
+                values: [TOTAL, MALE, FEMALE]
+
+  - name: fct_population_annual
+    columns:
+      - name: population_annual_key
+        data_tests: [not_null, unique]
+      - name: region_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+      - name: age_group_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_age_group')
+                field: age_group_key
+      - name: sex_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_sex')
+                field: sex_key
+      - name: population
+        data_tests: [not_null]
+

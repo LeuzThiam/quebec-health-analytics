@@ -13,6 +13,8 @@ sources:
         identifier: URGENCES_CUMULATIVES_RAW
       - name: surgery_waitlist
         identifier: SURGERY_WAITLIST_RAW
+      - name: population_health_region
+        identifier: POPULATION_HEALTH_REGION_RAW
 
 models:
   - name: stg_urgences_horaires
@@ -54,4 +56,21 @@ models:
       - name: wait_bucket
         data_tests: [not_null]
       - name: region_code
+        data_tests: [not_null]
+
+  - name: stg_population_health_region
+    columns:
+      - name: reference_year
+        data_tests: [not_null]
+      - name: region_code
+        data_tests: [not_null]
+      - name: age_group
+        data_tests: [not_null]
+      - name: sex_code
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [TOTAL, MALE, FEMALE]
+      - name: population
         data_tests: [not_null]
