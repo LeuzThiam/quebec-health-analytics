@@ -14,8 +14,11 @@ select
     taux_occupation_pct,
     dms_civiere_moyenne_heures,
     dms_ambulatoire_moyenne_heures,
-    iff(taux_occupation_pct > 100, true, false) as is_over_100_pct,
-    iff(taux_occupation_pct > 120, true, false) as is_over_120_pct,
-    iff(taux_occupation_pct > 150, true, false) as is_over_150_pct
+    case when taux_occupation_pct is not null then taux_occupation_pct > 100 end
+        as is_over_100_pct,
+    case when taux_occupation_pct is not null then taux_occupation_pct > 120 end
+        as is_over_120_pct,
+    case when taux_occupation_pct is not null then taux_occupation_pct > 150 end
+        as is_over_150_pct
 from {{ ref('mart_urgences_regionales') }}
 where rss_code is not null
