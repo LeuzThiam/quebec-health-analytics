@@ -5,7 +5,9 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from config import SnowflakeSettings
 from population_download import download_file, validate_file
+from population_loader import load_population_file
 
 
 DEFAULT_FILE = Path("data/incoming/population_quebec.csv")
@@ -37,9 +39,17 @@ def main() -> None:
     print(f"Fichier : {validated_file.path}")
     print(f"Lignes : {validated_file.row_count}")
     print(f"SHA-256 : {validated_file.sha256}")
-    print("Validation terminée, aucun chargement Snowflake effectué.")
+
+    if args.validate_only:
+        print("Validation terminée, aucun chargement Snowflake effectué.")
+        return
+
+    batch_id = load_population_file(
+        validated_file,
+        SnowflakeSettings.from_environment(),
+    )
+    print(f"Résultat du chargement : {batch_id}")
 
 
 if __name__ == "__main__":
     main()
-
