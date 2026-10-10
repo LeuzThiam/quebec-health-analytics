@@ -18,3 +18,6 @@ models:
     marts:
       +schema: marts
       +materialized: view
+    monitoring:
+      +schema: marts
+      +materialized: view
