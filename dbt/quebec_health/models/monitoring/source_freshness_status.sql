@@ -40,7 +40,10 @@ evaluated as (
         policy.source_name,
         activity.last_loaded_at,
         activity.row_count,
-        datediff('hour', activity.last_loaded_at, current_timestamp()) as age_hours,
+        round(
+            datediff('second', activity.last_loaded_at, current_timestamp()) / 3600.0,
+            2
+        ) as age_hours,
         policy.warning_after_hours,
         policy.stale_after_hours
     from freshness_policy as policy
@@ -57,8 +60,10 @@ select
     stale_after_hours,
     case
         when last_loaded_at is null or row_count = 0 then 'MISSING'
-        when age_hours >= stale_after_hours then 'STALE'
-        when age_hours >= warning_after_hours then 'WARNING'
+        when current_timestamp() >= dateadd('hour', stale_after_hours, last_loaded_at)
+            then 'STALE'
+        when current_timestamp() >= dateadd('hour', warning_after_hours, last_loaded_at)
+            then 'WARNING'
         else 'FRESH'
     end as freshness_status,
     current_timestamp() as evaluated_at
