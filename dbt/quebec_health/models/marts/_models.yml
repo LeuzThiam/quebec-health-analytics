@@ -192,3 +192,74 @@ models:
       - name: population
         data_tests: [not_null]
 
+  - name: agg_surgery_region
+    description: Indicateurs régionaux de chirurgie normalisés par la population disponible.
+    columns:
+      - name: surgery_region_period_key
+        data_tests: [not_null, unique]
+      - name: financial_period
+        data_tests: [not_null]
+      - name: region_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+      - name: population
+        data_tests: [not_null]
+      - name: patients_waiting
+        data_tests: [not_null]
+      - name: patients_waiting_per_100k
+        data_tests: [not_null]
+
+  - name: agg_surgery_specialty
+    description: Indicateurs de listes d'attente par période et spécialité.
+    columns:
+      - name: surgery_specialty_period_key
+        data_tests: [not_null, unique]
+      - name: financial_period
+        data_tests: [not_null]
+      - name: specialty_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_specialty')
+                field: specialty_key
+      - name: patients_waiting
+        data_tests: [not_null]
+
+  - name: agg_emergency_region
+    description: Pression horaire consolidée par région pour Power BI.
+    columns:
+      - name: emergency_region_snapshot_key
+        data_tests: [not_null, unique]
+      - name: snapshot_at
+        data_tests: [not_null]
+      - name: region_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+
+  - name: agg_health_region
+    description: Portrait régional courant réunissant population, chirurgie et urgence.
+    columns:
+      - name: region_key
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+      - name: region_code
+        data_tests: [not_null, unique]
+      - name: population_reference_year
+        data_tests: [not_null]
+      - name: population
+        data_tests: [not_null]
+
