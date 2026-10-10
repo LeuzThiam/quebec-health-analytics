@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: source_freshness_status
+    description: État de fraîcheur opérationnel des cinq sources du projet.
+    columns:
+      - name: source_name
+        data_tests: [not_null, unique]
+      - name: row_count
+        data_tests: [not_null]
+      - name: freshness_status
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [FRESH, WARNING, STALE, MISSING]
+      - name: evaluated_at
+        data_tests: [not_null]
