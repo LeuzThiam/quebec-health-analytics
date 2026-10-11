@@ -11,3 +11,13 @@ quebec_health:
       warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'HEALTH_ELT_WH') }}"
       schema: staging
       threads: 4
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_PROD_ACCOUNT', 'not_configured') }}"
+      user: "{{ env_var('SNOWFLAKE_PROD_USER', 'not_configured') }}"
+      password: "{{ env_var('SNOWFLAKE_PROD_PASSWORD', 'not_configured') }}"
+      role: "{{ env_var('SNOWFLAKE_PROD_ROLE', 'QUEBEC_HEALTH_TRANSFORM_PROD') }}"
+      database: "{{ env_var('SNOWFLAKE_PROD_DATABASE', 'QUEBEC_HEALTH_DWH_PROD') }}"
+      warehouse: "{{ env_var('SNOWFLAKE_PROD_WAREHOUSE', 'HEALTH_ELT_PROD_WH') }}"
+      schema: staging
+      threads: 4
