@@ -18,4 +18,3 @@ select
     file_modified_at,
     loaded_at
 from {{ ref('stg_population_health_region') }}
-

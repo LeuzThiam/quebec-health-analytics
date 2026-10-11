@@ -7,4 +7,3 @@ qualify row_number() over (
     partition by sex_code
     order by sex_label
 ) = 1
-

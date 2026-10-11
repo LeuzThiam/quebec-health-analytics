@@ -213,4 +213,3 @@ def validate_file(
         modified_at=modified_at,
         row_count=len(data),
     )
-

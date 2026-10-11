@@ -25,4 +25,3 @@ qualify row_number() over (
     partition by age_group
     order by age_group
 ) = 1
-
