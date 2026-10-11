@@ -1,4 +1,5 @@
--- Vue informative : elle surveille les sources sans provoquer d'échec de pipeline.
+-- Supervision informative : les statuts sont consultables sans bloquer les chargements.
+-- Les seuils reflètent la fréquence métier attendue de chaque jeu de données.
 with freshness_policy as (
     select 'urgences_horaires' as source_name, 6 as warning_after_hours, 12 as stale_after_hours
     union all select 'urgences_cumulatives', 36, 72
@@ -8,6 +9,7 @@ with freshness_policy as (
 ),
 
 source_activity as (
+    -- LOADED_AT mesure l'arrivée technique dans Snowflake, indépendamment de la date métier.
     select
         'urgences_horaires' as source_name,
         max(loaded_at) as last_loaded_at,
@@ -40,6 +42,7 @@ evaluated as (
         policy.source_name,
         activity.last_loaded_at,
         activity.row_count,
+        -- Le calcul à la seconde évite l'arrondi anticipé de DATEDIFF('hour').
         round(
             datediff('second', activity.last_loaded_at, current_timestamp()) / 3600.0,
             2
@@ -59,6 +62,7 @@ select
     warning_after_hours,
     stale_after_hours,
     case
+        -- Les échéances exactes empêchent un changement de statut avant la durée prévue.
         when last_loaded_at is null or row_count = 0 then 'MISSING'
         when current_timestamp() >= dateadd('hour', stale_after_hours, last_loaded_at)
             then 'STALE'
