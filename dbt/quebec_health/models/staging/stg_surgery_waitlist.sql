@@ -1,0 +1,20 @@
+select
+    nullif(trim(periode_attente), '') as financial_period,
+    nullif(trim(delai_attente), '') as wait_bucket,
+    nullif(trim(region), '') as region_code,
+    try_to_number(chirurgie_generale) as chirurgie_generale,
+    try_to_number(chirurgie_orthopedique) as chirurgie_orthopedique,
+    try_to_number(chirurgie_plastique) as chirurgie_plastique,
+    try_to_number(chirurgie_vasculaire) as chirurgie_vasculaire,
+    try_to_number(neurochirurgie) as neurochirurgie,
+    try_to_number(obstetrique_gynecologie) as obstetrique_gynecologie,
+    try_to_number(ophtalmologie) as ophtalmologie,
+    try_to_number(orl_chirurgie_cervico_faciale) as orl_chirurgie_cervico_faciale,
+    try_to_number(urologie) as urologie,
+    try_to_number(autres) as autres,
+    try_to_number(total) as total_patients,
+    source_file,
+    batch_id,
+    file_modified_at,
+    loaded_at
+from {{ source('raw', 'surgery_waitlist') }}

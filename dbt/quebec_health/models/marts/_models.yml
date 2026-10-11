@@ -56,3 +56,210 @@ models:
                 to: ref('dim_time')
                 field: time_key
 
+  - name: agg_emergency_daily
+    description: Indicateurs quotidiens par installation pour le suivi de la pression aux urgences.
+    columns:
+      - name: date_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_key
+      - name: facility_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_installations_urgence')
+                field: facility_key
+      - name: region_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+      - name: snapshot_count
+        data_tests: [not_null]
+      - name: observed_hours
+        data_tests: [not_null]
+
+  - name: fct_urgences_cumulatives
+    description: Historique cumulatif des urgences par année financière, période et niveau organisationnel.
+    columns:
+      - name: emergency_cumulative_key
+        data_tests: [not_null, unique]
+      - name: annee_financiere
+        data_tests: [not_null]
+      - name: cumul_periode
+        data_tests: [not_null]
+      - name: niveau_agregation
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [PROVINCIAL, REGIONAL, ETABLISSEMENT, INSTALLATION]
+
+  - name: dim_specialty
+    columns:
+      - name: specialty_key
+        data_tests: [not_null, unique]
+      - name: specialty_code
+        data_tests: [not_null, unique]
+
+  - name: dim_wait_bucket
+    columns:
+      - name: wait_bucket_key
+        data_tests: [not_null, unique]
+      - name: wait_bucket
+        data_tests: [not_null, unique]
+      - name: display_order
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3]
+
+  - name: fct_surgery_waitlist
+    columns:
+      - name: surgery_waitlist_key
+        data_tests: [not_null, unique]
+      - name: region_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+      - name: specialty_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_specialty')
+                field: specialty_key
+      - name: wait_bucket_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_wait_bucket')
+                field: wait_bucket_key
+
+  - name: dim_age_group
+    columns:
+      - name: age_group_key
+        data_tests: [not_null, unique]
+      - name: age_group_label
+        data_tests: [not_null, unique]
+      - name: aggregation_level
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [TOTAL, SINGLE_YEAR, STANDARD_GROUP]
+
+  - name: dim_sex
+    columns:
+      - name: sex_key
+        data_tests: [not_null, unique]
+      - name: sex_code
+        data_tests:
+          - not_null
+          - unique
+          - accepted_values:
+              arguments:
+                values: [TOTAL, MALE, FEMALE]
+
+  - name: fct_population_annual
+    columns:
+      - name: population_annual_key
+        data_tests: [not_null, unique]
+      - name: region_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+      - name: age_group_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_age_group')
+                field: age_group_key
+      - name: sex_key
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_sex')
+                field: sex_key
+      - name: population
+        data_tests: [not_null]
+
+  - name: agg_surgery_region
+    description: Indicateurs régionaux de chirurgie normalisés par la population disponible.
+    columns:
+      - name: surgery_region_period_key
+        data_tests: [not_null, unique]
+      - name: financial_period
+        data_tests: [not_null]
+      - name: region_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+      - name: population
+        data_tests: [not_null]
+      - name: patients_waiting
+        data_tests: [not_null]
+      - name: patients_waiting_per_100k
+        data_tests: [not_null]
+
+  - name: agg_surgery_specialty
+    description: Indicateurs de listes d'attente par période et spécialité.
+    columns:
+      - name: surgery_specialty_period_key
+        data_tests: [not_null, unique]
+      - name: financial_period
+        data_tests: [not_null]
+      - name: specialty_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_specialty')
+                field: specialty_key
+      - name: patients_waiting
+        data_tests: [not_null]
+
+  - name: agg_emergency_region
+    description: Pression horaire consolidée par région pour Power BI.
+    columns:
+      - name: emergency_region_snapshot_key
+        data_tests: [not_null, unique]
+      - name: snapshot_at
+        data_tests: [not_null]
+      - name: region_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+
+  - name: agg_health_region
+    description: Portrait régional courant réunissant population, chirurgie et urgence.
+    columns:
+      - name: region_key
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('dim_region')
+                field: region_key
+      - name: region_code
+        data_tests: [not_null, unique]
+      - name: population_reference_year
+        data_tests: [not_null]
+      - name: population
+        data_tests: [not_null]
+
