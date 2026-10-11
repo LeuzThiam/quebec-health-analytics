@@ -5,14 +5,26 @@ models:
     description: État de fraîcheur opérationnel des cinq sources du projet.
     columns:
       - name: source_name
+        description: Nom fonctionnel unique du jeu de données RAW surveillé.
         data_tests: [not_null, unique]
+      - name: last_loaded_at
+        description: Horodatage du chargement technique le plus récent dans Snowflake.
       - name: row_count
+        description: Nombre total de lignes actuellement présentes dans la table RAW.
         data_tests: [not_null]
+      - name: age_hours
+        description: Âge du dernier chargement en heures décimales, calculé à la seconde.
+      - name: warning_after_hours
+        description: Délai après lequel la source passe au statut WARNING.
+      - name: stale_after_hours
+        description: Délai après lequel la source passe au statut STALE.
       - name: freshness_status
+        description: Statut opérationnel calculé selon la présence et l'âge des données.
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: [FRESH, WARNING, STALE, MISSING]
       - name: evaluated_at
+        description: Horodatage auquel le statut a été évalué.
         data_tests: [not_null]
