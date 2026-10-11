@@ -10,4 +10,3 @@ select
 from {{ ref('stg_population_health_region') }}
 where age_group = 'Total, tous les âges'
   and sex_code = 'TOTAL'
-

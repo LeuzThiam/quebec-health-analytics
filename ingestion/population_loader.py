@@ -140,4 +140,3 @@ def load_population_file(file: PopulationFile, settings: SnowflakeSettings) -> s
         raise
     finally:
         connection.close()
-

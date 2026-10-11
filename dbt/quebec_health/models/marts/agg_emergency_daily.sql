@@ -36,4 +36,3 @@ select
     max_by(nombre_patients_attente_pec, snapshot_at) as patients_waiting_latest
 from daily_snapshots
 group by date_key, facility_key, region_key
-

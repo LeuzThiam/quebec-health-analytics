@@ -17,4 +17,3 @@ select
     file_modified_at,
     loaded_at
 from {{ source('raw', 'population_health_region') }}
-
