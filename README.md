@@ -1,68 +1,112 @@
 # Québec Health Analytics Platform
 
-Plateforme de données destinée à analyser la pression sur les urgences, l'accès aux chirurgies et les différences régionales du système de santé québécois.
+Plateforme ELT consacrée à l'analyse de la pression sur les urgences, des délais d'accès aux chirurgies et des différences régionales du système de santé québécois.
 
-## État actuel
+## Périmètre
 
-Le projet dispose maintenant d'un pipeline analytique fonctionnel à partir de trois jeux de données officiels du MSSS :
+Le projet intègre cinq jeux de données publics :
 
-- la situation horaire dans les urgences;
-- l'historique cumulatif des urgences par période financière;
-- le référentiel M02 des installations.
+- situation horaire des urgences du MSSS;
+- données cumulatives des urgences;
+- listes d'attente en chirurgie;
+- référentiel des installations du réseau de la santé;
+- population par région de santé de Statistique Canada.
 
-Les notebooks valident la structure des fichiers, leur qualité et la relation entre les numéros de permis des installations. Snowflake assure ensuite la transformation des données selon les couches `RAW`, `STAGING`, `INTERMEDIATE` et `MARTS`.
+Les données sont institutionnelles et agrégées. Le projet ne contient aucun renseignement médical personnel.
 
-La couche analytique contient une dimension des installations, une table de faits des urgences horaires, une table de faits cumulative et un mart régional. Elle permet d'analyser la pression actuelle ainsi que son évolution sur plusieurs années financières.
+## Architecture
 
-L'environnement Snowflake de développement utilise la base `QUEBEC_HEALTH_DWH` et un warehouse `X-SMALL` configuré pour s'arrêter automatiquement après 60 secondes d'inactivité.
+```text
+Sources publiques
+      ↓
+Ingestion et validation Python
+      ↓
+Snowflake RAW et journal d'audit
+      ↓
+dbt STAGING → INTERMEDIATE → MARTS
+      ↓
+Power BI
+```
 
-## Exécuter les notebooks
+Python télécharge et valide les fichiers, calcule une empreinte SHA-256 et charge les nouvelles versions dans Snowflake. Le mécanisme d'idempotence empêche le rechargement d'un fichier déjà traité.
+
+dbt normalise les données, applique les règles métier et construit un modèle dimensionnel comprenant notamment les faits d'urgences, de chirurgie et de population. Les marts produisent des indicateurs provinciaux, régionaux et par habitant destinés à Power BI.
+
+## Technologies
+
+- Python, Pandas et Jupyter Notebook
+- Snowflake
+- dbt Core et dbt-snowflake
+- SQL
+- Power BI
+- Git, GitHub et GitHub Actions
+
+## Modèle analytique
+
+Les principaux objets de la couche `MARTS` sont :
+
+- `FCT_URGENCES_HORAIRES` et `FCT_URGENCES_CUMULATIVES`;
+- `FCT_SURGERY_WAITLIST`;
+- `FCT_POPULATION_ANNUAL`;
+- les dimensions de date, heure, région, installation, spécialité et délai;
+- les agrégats quotidiens, régionaux, chirurgicaux et démographiques.
+
+Les tests dbt contrôlent les clés, les relations, les valeurs obligatoires, la granularité et la cohérence des mesures. Un modèle de supervision expose également la fraîcheur des cinq sources.
+
+## Tableau de bord
+
+Le rapport `powerbi/quebec_health_analytics.pbix` présente actuellement :
+
+- une vue provinciale de la pression sur les urgences;
+- une comparaison des taux d'occupation par région;
+- une analyse des listes d'attente en chirurgie.
+
+## Installation locale
 
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-python -m jupyter lab
 ```
 
-Les fichiers téléchargés sont conservés localement dans `data/exploration` et ne sont pas versionnés.
+Les données téléchargées sont conservées dans `data/` et ne sont pas versionnées.
 
-## Automatisation locale
+## Exécution dbt
 
-L'ingestion horaire s'exécute depuis Windows, car le serveur source du MSSS refuse les téléchargements provenant des runners GitHub. La configuration Snowflake est enregistrée hors du dépôt et le mot de passe est chiffré par Windows pour l'utilisateur courant.
-
-Initialisation unique :
+Les paramètres Snowflake sont fournis par des variables d'environnement. Aucun secret n'est conservé dans le dépôt.
 
 ```powershell
-.\automation\run_hourly_pipeline.ps1 -Initialize
+.\venv\Scripts\dbt.exe debug `
+    --project-dir .\dbt\quebec_health `
+    --profiles-dir .\dbt\quebec_health
+
+.\venv\Scripts\dbt.exe build `
+    --project-dir .\dbt\quebec_health `
+    --profiles-dir .\dbt\quebec_health
 ```
 
-Installation unique de l'exécution automatique toutes les heures :
+## Automatisation horaire
 
-```powershell
-.\automation\run_hourly_pipeline.ps1 -InstallScheduledTask
-```
-
-Windows demande alors le mot de passe du compte local afin d'autoriser l'exécution même lorsque la session est fermée. Ce mot de passe est transmis uniquement au Planificateur de tâches Windows et n'est pas enregistré dans le projet.
-
-Pour un compte Windows sans mot de passe, installer plutôt la tâche en mode session ouverte :
-
-```powershell
-.\automation\run_hourly_pipeline.ps1 -InstallScheduledTask -RunOnlyWhenLoggedOn
-```
-
-Dans ce mode, aucun mot de passe Windows n'est demandé. La tâche s'exécute uniquement lorsque l'utilisateur est connecté.
-
-Exécution complète de l'ingestion et des transformations dbt :
+L'ingestion des urgences horaires et les transformations dbt peuvent être lancées depuis Windows :
 
 ```powershell
 .\automation\run_hourly_pipeline.ps1
 ```
 
-Les journaux d'exécution sont conservés dans `%LOCALAPPDATA%\QuebecHealthAnalytics\logs`.
-
-Le fichier cumulatif évolue par période financière et reste volontairement séparé de la tâche horaire. Son ingestion se lance au besoin avec :
+Initialisation de la configuration locale sécurisée :
 
 ```powershell
-.\venv\Scripts\python.exe .\ingestion\emergency_cumulative.py
+.\automation\run_hourly_pipeline.ps1 -Initialize
 ```
+
+Installation de la tâche planifiée pour une session Windows sans mot de passe :
+
+```powershell
+.\automation\run_hourly_pipeline.ps1 -InstallScheduledTask -RunOnlyWhenLoggedOn
+```
+
+Les journaux d'exécution sont enregistrés dans `%LOCALAPPDATA%\QuebecHealthAnalytics\logs`.
+
+## Méthode de développement
+
+Le développement suit un flux Git structuré : branche fonctionnelle, pull request vers `develop`, contrôles automatisés, puis publication planifiée vers `main`. Les changements ne sont pas développés directement sur la branche de production.
