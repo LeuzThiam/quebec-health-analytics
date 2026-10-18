@@ -55,7 +55,8 @@ Les tests dbt contrôlent les clés, les relations, les valeurs obligatoires, la
 
 ## Tableau de bord
 
-Le rapport `powerbi/quebec_health_analytics.pbix` présente actuellement :
+Le rapport Power BI, conservé localement pour éviter de publier un fichier
+binaire contenant des données mises en cache, présente actuellement :
 
 - une vue provinciale de la pression sur les urgences;
 - une comparaison des taux d'occupation par région;
