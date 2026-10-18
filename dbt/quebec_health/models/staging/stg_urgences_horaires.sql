@@ -1,5 +1,7 @@
 select
-    nullif(trim(rss), '') as rss_code,
+    -- Les fichiers MSSS peuvent livrer 01 comme 1. Cette normalisation
+    -- garantit la jointure avec les codes régionaux de Statistique Canada.
+    lpad(nullif(trim(rss), ''), 2, '0') as rss_code,
     nullif(trim(region), '') as region,
     nullif(trim(nom_etablissement), '') as nom_etablissement,
     nullif(trim(nom_installation), '') as nom_installation,
