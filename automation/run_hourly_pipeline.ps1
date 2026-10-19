@@ -37,10 +37,28 @@ function Install-HourlyScheduledTask {
     $scriptPath = $PSCommandPath
     $arguments = '-NoProfile -ExecutionPolicy Bypass -File "{0}"' -f $scriptPath
     $action = New-ScheduledTaskAction -Execute $powerShellExecutable -Argument $arguments -WorkingDirectory $projectRoot
+
+    # Le MSSS publie généralement le fichier autour de la 40e minute.
+    # La première exécution est donc alignée à HH:45, puis répétée chaque heure.
+    $now = Get-Date
+    $firstRun = Get-Date `
+        -Year $now.Year `
+        -Month $now.Month `
+        -Day $now.Day `
+        -Hour $now.Hour `
+        -Minute 45 `
+        -Second 0
+    if ($firstRun -le $now) {
+        $firstRun = $firstRun.AddHours(1)
+    }
     $trigger = New-ScheduledTaskTrigger `
         -Once `
-        -At ((Get-Date).AddMinutes(1)) `
+        -At $firstRun `
         -RepetitionInterval (New-TimeSpan -Hours 1)
+    $settings = New-ScheduledTaskSettingsSet `
+        -StartWhenAvailable `
+        -MultipleInstances IgnoreNew `
+        -ExecutionTimeLimit (New-TimeSpan -Minutes 45)
     $windowsUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 
     if ($RunOnlyWhenLoggedOn) {
@@ -52,6 +70,7 @@ function Install-HourlyScheduledTask {
             -TaskName $taskName `
             -Action $action `
             -Trigger $trigger `
+            -Settings $settings `
             -Principal $principal `
             -Description "Ingestion horaire des urgences et transformations dbt." `
             -Force | Out-Null
@@ -67,6 +86,7 @@ function Install-HourlyScheduledTask {
                 -TaskName $taskName `
                 -Action $action `
                 -Trigger $trigger `
+                -Settings $settings `
                 -User $windowsCredential.UserName `
                 -Password $windowsPassword `
                 -Description "Ingestion horaire des urgences et transformations dbt." `
