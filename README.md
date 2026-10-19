@@ -108,6 +108,14 @@ Installation de la tâche planifiée pour une session Windows sans mot de passe 
 
 Les journaux d'exécution sont enregistrés dans `%LOCALAPPDATA%\QuebecHealthAnalytics\logs`.
 
+### Exécution dans GitHub Actions
+
+La CI valide la syntaxe Python et PowerShell ainsi que le projet dbt à chaque pull request concernée. Elle ne charge aucune donnée et n'utilise aucun secret de production.
+
+### Limite de couverture
+
+Le MSSS ne publie que l'état courant des urgences, sans historique : une heure non capturée est définitivement perdue. La tâche Windows s'exécute à `HH:45`, empêche les exécutions concurrentes et reprend dès que possible après une indisponibilité. Un ordinateur éteint pendant plusieurs heures crée néanmoins un trou de couverture.
+
 ## Méthode de développement
 
 Le développement suit un flux Git structuré : branche fonctionnelle, pull request vers `develop`, contrôles automatisés, puis publication planifiée vers `main`. Les changements ne sont pas développés directement sur la branche de production.
