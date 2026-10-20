@@ -10,7 +10,9 @@ Le projet intègre cinq jeux de données publics :
 - données cumulatives des urgences;
 - listes d'attente en chirurgie;
 - référentiel des installations du réseau de la santé;
-- population par région de santé de Statistique Canada.
+- population par région de santé de Statistique Canada;
+- estimations et projections de population comparables de l'ISQ/MSSS,
+  diffusées par Données Québec sous licence CC-BY 4.0.
 
 Les données sont institutionnelles et agrégées. Le projet ne contient aucun renseignement médical personnel.
 
