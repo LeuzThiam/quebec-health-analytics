@@ -16,6 +16,43 @@ models:
       - name: region_key
         data_tests: [not_null, unique]
 
+  - name: region_crosswalk
+    description: Correspondance explicite entre les RSS du MSSS et la source ISQ/MSSS.
+    columns:
+      - name: region_key
+        data_tests: [not_null, unique]
+      - name: region_code
+        data_tests: [not_null, unique]
+      - name: match_status
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [MATCHED, MSSS_ONLY, POPULATION_ONLY]
+
+  - name: agg_population_demography_region
+    description: >-
+      Population totale, population de 65 ans et plus, part des 65 ans et plus
+      et croissance annuelle par RSS. Les projections décrivent des scénarios
+      démographiques et ne constituent pas des observations.
+    columns:
+      - name: population_demography_region_key
+        data_tests: [not_null, unique]
+      - name: region_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('region_crosswalk')
+                field: region_key
+      - name: reference_year
+        data_tests: [not_null]
+      - name: population_total
+        data_tests: [not_null]
+      - name: population_65_plus
+        data_tests: [not_null]
+      - name: share_65_plus_pct
+        data_tests: [not_null]
+
   - name: dim_installations_urgence
     columns:
       - name: facility_key
