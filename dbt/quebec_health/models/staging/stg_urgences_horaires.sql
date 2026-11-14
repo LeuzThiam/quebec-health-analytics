@@ -26,3 +26,13 @@ select
     source_file,
     loaded_at
 from {{ source('raw', 'urgences_horaires') }}
+-- Le MSSS publie parfois une installation sans permis ni mesure (ex. HÔPITAL
+-- HONORÉ, Montérégie). Sans permis, elle ne peut pas être rattachée à
+-- dim_installations_urgence : on l'écarte ici. RAW reste intact et rejouable.
+-- Les agrégats (régional, provincial) n'ont pas de permis et sont conservés.
+where not (
+    nullif(trim(no_permis_installation), '') is null
+    and upper(trim(nom_installation)) not in
+        ('ENSEMBLE DU QUÉBEC', 'TOTAL PROVINCIAL', 'TOTAL RÉGIONAL')
+)
+

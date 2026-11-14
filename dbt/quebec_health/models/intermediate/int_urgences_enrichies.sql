@@ -7,7 +7,9 @@ with urgences as (
         ) as taux_occupation_pct
     from {{ ref('stg_urgences_horaires') }}
     where niveau_agregation = 'INSTALLATION'
-)
+),
+
+enriched as (
 
 select
     urgence.date_heure_mise_a_jour,
@@ -50,3 +52,15 @@ select
 from urgences as urgence
 left join {{ ref('stg_installations') }} as installation
     on urgence.no_permis_installation = installation.installation_code
+)
+
+-- Une ligne par installation et par instant : deux captures prises avant un
+-- rafraîchissement du MSSS contiennent les mêmes valeurs. On garde la plus récente.
+-- Les lignes sans horodatage sont inutilisables dans une série temporelle.
+select *
+from enriched
+where snapshot_at is not null
+qualify row_number() over (
+    partition by no_permis_installation, snapshot_at
+    order by loaded_at desc, source_file desc
+) = 1
