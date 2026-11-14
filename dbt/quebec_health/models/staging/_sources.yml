@@ -15,6 +15,13 @@ sources:
         identifier: SURGERY_WAITLIST_RAW
       - name: population_health_region
         identifier: POPULATION_HEALTH_REGION_RAW
+      - name: population_comparable
+        identifier: POPULATION_COMPARABLE_RAW
+        description: >-
+          Estimations et projections de population comparables par territoire
+          sociosanitaire, produites par l'ISQ et diffusées par le MSSS sur
+          Données Québec. Licence Attribution 4.0 International (CC-BY 4.0).
+          Source : https://donneesquebec.ca/recherche/dataset/estimations-et-projections-de-population-comparables
 
 models:
   - name: stg_urgences_horaires
@@ -72,5 +79,28 @@ models:
           - accepted_values:
               arguments:
                 values: [TOTAL, MALE, FEMALE]
+      - name: population
+        data_tests: [not_null]
+
+  - name: stg_population_comparable
+    description: Population ISQ/MSSS typée au grain RSS, année, sexe et âge.
+    columns:
+      - name: population_comparable_key
+        data_tests: [not_null, unique]
+      - name: region_code
+        data_tests: [not_null]
+      - name: reference_year
+        data_tests: [not_null]
+      - name: sex_code
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [TOTAL, MALE, FEMALE]
+      - name: data_type
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [ESTIMATE, PROJECTION]
       - name: population
         data_tests: [not_null]

@@ -7,7 +7,9 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from email.utils import parsedate_to_datetime
+from io import BytesIO
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 from uuid import uuid4
 
@@ -59,8 +61,8 @@ class DownloadedFile:
     row_count: int
 
 
-def discover_resource_url() -> str:
-    """Retourne l'URL du fichier horaire comprenant les personnes présentes."""
+def discover_resource() -> tuple[str, str]:
+    """Retourne l'identifiant CKAN et l'URL du fichier horaire attendu."""
     request = Request(CKAN_API_URL, headers=HTTP_HEADERS)
     with urlopen(request, timeout=30) as response:
         payload = json.load(response)
@@ -72,25 +74,51 @@ def discover_resource_url() -> str:
         if resource.get("format", "").upper() == "CSV" and (
             "personnes présentes" in name or "nbpers" in url.lower()
         ):
-            return url
+            return resource["id"], url
     raise RuntimeError("Ressource CSV des personnes présentes introuvable.")
 
 
 def download_file(destination: Path) -> tuple[Path, str, datetime | None]:
     """Télécharge atomiquement le fichier officiel vers le chemin demandé."""
-    source_url = discover_resource_url()
-    request = Request(
-        source_url,
-        headers={**HTTP_HEADERS, "Referer": "https://www.msss.gouv.qc.ca/"},
-    )
+    resource_id, source_url = discover_resource()
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary_path = destination.with_name(
         f".{destination.stem}.{uuid4().hex}{destination.suffix}.part"
     )
 
-    with urlopen(request, timeout=60) as response:
+    request = Request(
+        source_url,
+        headers={**HTTP_HEADERS, "Referer": "https://www.msss.gouv.qc.ca/"},
+    )
+    try:
+        response = urlopen(request, timeout=60)
+        downloaded_from = source_url
+    except HTTPError as error:
+        if error.code != 403:
+            raise
+        downloaded_from = (
+            "https://www.donneesquebec.ca/recherche/datastore/dump/"
+            f"{resource_id}?format=csv"
+        )
+        response = urlopen(
+            Request(downloaded_from, headers=HTTP_HEADERS), timeout=60
+        )
+
+    with response:
         content = response.read()
         last_modified = response.headers.get("Last-Modified")
+
+    if downloaded_from != source_url:
+        # CKAN ajoute une colonne technique `_id`. On reconstruit ici le CSV
+        # exact attendu par Snowflake avant de calculer son hash et de le charger.
+        datastore_data = pd.read_csv(
+            BytesIO(content), encoding="utf-8-sig", dtype=str
+        )
+        datastore_data.columns = datastore_data.columns.str.strip()
+        datastore_data = datastore_data.drop(columns=["_id"], errors="raise")
+        if tuple(datastore_data.columns) != EXPECTED_COLUMNS:
+            raise ValueError("Schéma inattendu dans l'export DataStore.")
+        content = datastore_data.to_csv(index=False).encode("cp1252")
 
     if not content:
         raise ValueError("Le fichier téléchargé est vide.")
@@ -105,7 +133,7 @@ def download_file(destination: Path) -> tuple[Path, str, datetime | None]:
         temporary_path.unlink(missing_ok=True)
 
     modified_at = parsedate_to_datetime(last_modified) if last_modified else None
-    return immutable_path, source_url, modified_at
+    return immutable_path, downloaded_from, modified_at
 
 
 def validate_file(

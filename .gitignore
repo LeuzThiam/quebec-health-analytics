@@ -6,6 +6,7 @@ __pycache__/
 .ruff_cache/
 .coverage
 htmlcov/
+logs/
 .venv/
 venv/
 
@@ -35,6 +36,7 @@ Thumbs.db
 data/
 .env
 artifacts/
+*.pbix
 
 # Local project planning
 notes.docx

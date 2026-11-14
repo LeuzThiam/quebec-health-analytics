@@ -1,5 +1,7 @@
 select
-    nullif(trim(rss), '') as rss_code,
+    -- Les fichiers MSSS peuvent livrer 01 comme 1. Cette normalisation
+    -- garantit la jointure avec les codes régionaux de Statistique Canada.
+    lpad(nullif(trim(rss), ''), 2, '0') as rss_code,
     nullif(trim(region), '') as region,
     nullif(trim(nom_etablissement), '') as nom_etablissement,
     nullif(trim(nom_installation), '') as nom_installation,
@@ -24,3 +26,13 @@ select
     source_file,
     loaded_at
 from {{ source('raw', 'urgences_horaires') }}
+-- Le MSSS publie parfois une installation sans permis ni mesure (ex. HÔPITAL
+-- HONORÉ, Montérégie). Sans permis, elle ne peut pas être rattachée à
+-- dim_installations_urgence : on l'écarte ici. RAW reste intact et rejouable.
+-- Les agrégats (régional, provincial) n'ont pas de permis et sont conservés.
+where not (
+    nullif(trim(no_permis_installation), '') is null
+    and upper(trim(nom_installation)) not in
+        ('ENSEMBLE DU QUÉBEC', 'TOTAL PROVINCIAL', 'TOTAL RÉGIONAL')
+)
+
