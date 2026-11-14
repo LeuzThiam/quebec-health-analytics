@@ -1,0 +1,61 @@
+name: Hourly pipeline
+
+# Ingestion des urgences horaires puis transformation dbt, sans dépendre d'un ordinateur personnel.
+# Les planifications (cron) ne s'exécutent que depuis la branche par défaut du dépôt.
+on:
+  schedule:
+    # Le fichier horaire du MSSS est publié environ 40 minutes après l'heure d'extraction.
+    - cron: "45 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hourly-pipeline
+  cancel-in-progress: false
+
+jobs:
+  ingest-and-transform:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+      SNOWFLAKE_AUTHENTICATOR: snowflake
+      SNOWFLAKE_WAREHOUSE: HEALTH_ELT_WH
+      SNOWFLAKE_DATABASE: QUEBEC_HEALTH_DWH
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: >-
+          python -m pip install
+          "pandas==2.3.3"
+          "snowflake-connector-python[pandas]==4.2.0"
+          "dbt-snowflake==1.12.1"
+
+      - name: Ingest hourly emergency file
+        env:
+          SNOWFLAKE_ROLE: QUEBEC_HEALTH_INGESTION
+        run: |
+          mkdir -p data/incoming
+          python ingestion/emergency_hourly.py
+
+      - name: Build dbt models and tests
+        env:
+          SNOWFLAKE_ROLE: QUEBEC_HEALTH_TRANSFORM
+        run: >-
+          dbt build
+          --project-dir dbt/quebec_health
+          --profiles-dir dbt/quebec_health
